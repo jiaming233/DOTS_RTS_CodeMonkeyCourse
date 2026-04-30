@@ -1,0 +1,13 @@
+/Library
+/Logs
+/obj
+/Temp
+/.vsconfig
+/ARSEEK_NewPlatform.sln
+/Assembly-CSharp.csproj
+/Assembly-CSharp-Editor.csproj
+/RuntimeInspector.Runtime.csproj
+/.vs
+*.sln
+*.csproj
+nlsLog.log
