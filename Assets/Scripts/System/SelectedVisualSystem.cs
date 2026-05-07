@@ -24,16 +24,16 @@ partial struct SelectedVisualSystem : ISystem
         #region 仅在状态改变时更新
         foreach (RefRO<Selected> selected in SystemAPI.Query<RefRO<Selected>>().WithPresent<Selected>())
         {
-            if (selected.ValueRO.onSelected)
-            {              
-                RefRW<LocalTransform> visualLocalTransform = SystemAPI.GetComponentRW<LocalTransform>(selected.ValueRO.visualEntity);
-                visualLocalTransform.ValueRW.Scale = selected.ValueRO.showScale;
-            }
-
             if (selected.ValueRO.onDeselected)
             {
                 RefRW<LocalTransform> visualLocalTransform = SystemAPI.GetComponentRW<LocalTransform>(selected.ValueRO.visualEntity);
                 visualLocalTransform.ValueRW.Scale = 0;
+            }
+
+            if (selected.ValueRO.onSelected)
+            {              
+                RefRW<LocalTransform> visualLocalTransform = SystemAPI.GetComponentRW<LocalTransform>(selected.ValueRO.visualEntity);
+                visualLocalTransform.ValueRW.Scale = selected.ValueRO.showScale;
             }
         }
         #endregion
