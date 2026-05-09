@@ -1,6 +1,8 @@
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 
@@ -17,11 +19,13 @@ partial struct FindTargetSystem : ISystem
         foreach ((
             RefRO<LocalTransform> localTransform,
             RefRW<FindTarget> findTarget,
-            RefRW<Target> target)
+            RefRW<Target> target,
+            RefRO<TargetOverride> targetOverride)
             in SystemAPI.Query<
                 RefRO<LocalTransform>,
                 RefRW<FindTarget>,
-                RefRW<Target>>())
+                RefRW<Target>,
+                RefRO<TargetOverride>>())
         {
             findTarget.ValueRW.timer -= SystemAPI.Time.DeltaTime;
             if(findTarget.ValueRO.timer > 0f)
@@ -31,8 +35,14 @@ partial struct FindTargetSystem : ISystem
             }
             findTarget.ValueRW.timer = findTarget.ValueRW.timerMax;
 
-            distanceHits.Clear();
+            //目标覆盖
+            if(targetOverride.ValueRO.targetEntity != Entity.Null)
+            {
+                target.ValueRW.targetEntity = targetOverride.ValueRO.targetEntity;
+                continue;
+            }
 
+            distanceHits.Clear();
             CollisionFilter collisionFilter = new CollisionFilter()
             {
                 BelongsTo = ~0u,
@@ -40,19 +50,53 @@ partial struct FindTargetSystem : ISystem
                 GroupIndex = 0
             };
 
+            Entity closestTargetEntity = Entity.Null;
+            float closestTargetDistance = float.MaxValue;
+            float currentTargetDistanceOffset = 0f;
+
+            if(target.ValueRO.targetEntity != Entity.Null)
+            {
+                closestTargetEntity = target.ValueRO.targetEntity;
+                LocalTransform targetLocalTransform = SystemAPI.GetComponent<LocalTransform>(target.ValueRO.targetEntity);
+                closestTargetDistance = math.distance(localTransform.ValueRO.Position, targetLocalTransform.Position);
+                currentTargetDistanceOffset = 2f;
+            }
 
             if(collisionWorld.OverlapSphere(localTransform.ValueRO.Position, findTarget.ValueRO.range, ref distanceHits, collisionFilter))
             {
+
                 foreach (DistanceHit distanceHit in distanceHits)
                 {
+                    //避免物理检测到已销毁的实体
+                    if(!SystemAPI.Exists(distanceHit.Entity) || !SystemAPI.HasComponent<Unit>(distanceHit.Entity))
+                    {
+                        continue;
+                    }
+
                     Unit targetUnit = SystemAPI.GetComponent<Unit>(distanceHit.Entity);
                     if(targetUnit.faction == findTarget.ValueRO.targetFaction)
                     {
-                        //有效目标
-                        target.ValueRW.targetEntity = distanceHit.Entity;
-                        break;
+                        if(closestTargetEntity == Entity.Null)
+                        {
+                            closestTargetEntity = distanceHit.Entity;
+                            closestTargetDistance = distanceHit.Distance;
+                        }
+                        else
+                        {
+                            if(distanceHit.Distance + currentTargetDistanceOffset < closestTargetDistance)
+                            {
+                                closestTargetEntity = distanceHit.Entity;
+                                closestTargetDistance = distanceHit.Distance;
+                            }
+                        }
                     }              
                 }
+            }
+
+            //设置有效目标
+            if(closestTargetEntity != Entity.Null)
+            {
+                target.ValueRW.targetEntity = closestTargetEntity;
             }
         }
     }

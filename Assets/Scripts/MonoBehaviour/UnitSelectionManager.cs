@@ -55,7 +55,7 @@ public class UnitSelectionManager : MonoBehaviour
             }
             #endregion
 
-            #region 选择区域内单位
+            #region 选择区域内单位\点击单选
             entityQuery = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<LocalTransform, Unit>()
                 .WithPresent<Selected>()
@@ -91,6 +91,7 @@ public class UnitSelectionManager : MonoBehaviour
             else
             {
                 //单选
+
                 //等价查询
                 //new EntityQueryBuilder(Allocator.Temp).WithAll<PhysicsWorldSingleton>().Build(entityManager);
                 entityQuery = entityManager.CreateEntityQuery(typeof(PhysicsWorldSingleton));
@@ -138,30 +139,107 @@ public class UnitSelectionManager : MonoBehaviour
 
             EntityManager entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-            EntityQuery entityQuery = new EntityQueryBuilder(Allocator.Temp).WithAll<UnitMover, Selected>().Build(entityManager);
 
-            NativeArray<Entity> entityArray = entityQuery.ToEntityArray(Allocator.Temp);
-            NativeArray<UnitMover> unitMoverArray = entityQuery.ToComponentDataArray<UnitMover>(Allocator.Temp);
+            #region 是否点击敌人
+            EntityQuery entityQuery = entityManager.CreateEntityQuery(typeof(PhysicsWorldSingleton));
 
-            //for (int i = 0; i < unitMoverArray.Length; i++)
-            //{
-            //    //副本 未修改存储在实体中的数据
-            //    UnitMover unitMover = unitMoverArray[i];
-            //    unitMover.targetPosition = mouseWorldPosition;
-            //    //更新实体的数据
-            //    entityManager.SetComponentData(entityArray[i], unitMover);
-            //}
+            PhysicsWorldSingleton physicsWorldSingleton = entityQuery.GetSingleton<PhysicsWorldSingleton>();
+            CollisionWorld collisionWorld = physicsWorldSingleton.CollisionWorld;
 
-            NativeArray<float3> movePositionArray = GenerateMovePositionArray(mouseWorldPosition, entityArray.Length);
+            Ray cameraRay = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-            for (int i = 0; i < unitMoverArray.Length; i++)
+            RaycastInput raycastInput = new RaycastInput()
             {
-                //副本 未修改存储在实体中的数据
-                UnitMover unitMover = unitMoverArray[i];
-                unitMover.targetPosition = /*mouseWorldPosition*/movePositionArray[i];
-                unitMoverArray[i] = unitMover;
+                Start = cameraRay.GetPoint(0f),
+                End = cameraRay.GetPoint(9999f),
+                Filter = new CollisionFilter()
+                {
+                    BelongsTo = ~0u,
+                    CollidesWith = 1u << GameAssets.UNITS_LAYER,//Layer:Units 位掩码
+                    GroupIndex = 0
+                }
+            };
+
+            bool isAttackingSingleTarget = false;
+            if (collisionWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit raycastHit))
+            {
+                if (entityManager.HasComponent<Unit>(raycastHit.Entity))
+                {
+                    Unit unit = entityManager.GetComponentData<Unit>(raycastHit.Entity);
+                    //右键点击僵尸
+                    if (unit.faction == Faction.Zombie)
+                    {
+                        isAttackingSingleTarget = true;
+
+                        //查找目标覆盖                      
+                        entityQuery = new EntityQueryBuilder(Allocator.Temp)
+                            .WithAll<UnitMover, Selected>()
+                            .WithPresent<TargetOverride>()
+                            .Build(entityManager);
+
+                        NativeArray<Entity> entityArray = entityQuery.ToEntityArray(Allocator.Temp);
+                        NativeArray<TargetOverride> targetOverrideArray = entityQuery.ToComponentDataArray<TargetOverride>(Allocator.Temp);
+                        for (int i = 0; i < targetOverrideArray.Length; i++)
+                        {
+                            TargetOverride targetOverride = targetOverrideArray[i];
+                            targetOverride.targetEntity = raycastHit.Entity;
+                            targetOverrideArray[i] = targetOverride;
+
+                            entityManager.SetComponentEnabled<MoveOverride>(entityArray[i], false);
+                        }
+                        //为所有选中单位设置目标覆盖
+                        entityQuery.CopyFromComponentDataArray(targetOverrideArray);
+                    }
+                }
             }
-            entityQuery.CopyFromComponentDataArray(unitMoverArray);
+            #endregion
+
+            if (!isAttackingSingleTarget)
+            {
+                entityQuery = new EntityQueryBuilder(Allocator.Temp)
+                    .WithAll<UnitMover, Selected>()
+                    .WithPresent<MoveOverride>()
+                    .WithPresent<TargetOverride>()
+                    .Build(entityManager);
+
+                NativeArray<Entity> entityArray = entityQuery.ToEntityArray(Allocator.Temp);
+                //NativeArray<UnitMover> unitMoverArray = entityQuery.ToComponentDataArray<UnitMover>(Allocator.Temp);
+                //移动覆盖
+                NativeArray<MoveOverride> moveOverrideArray = entityQuery.ToComponentDataArray<MoveOverride>(Allocator.Temp);
+                //目标覆盖
+                NativeArray<TargetOverride> targetOverrideArray = entityQuery.ToComponentDataArray<TargetOverride>(Allocator.Temp);
+                #region 单个更新
+                //for (int i = 0; i < unitMoverArray.Length; i++)
+                //{
+                //    //副本 未修改存储在实体中的数据
+                //    UnitMover unitMover = unitMoverArray[i];
+                //    unitMover.targetPosition = mouseWorldPosition;
+                //    //更新实体的数据
+                //    entityManager.SetComponentData(entityArray[i], unitMover);
+                //}
+                #endregion
+
+                #region 批量更新
+                NativeArray<float3> movePositionArray = GenerateMovePositionArray(mouseWorldPosition, entityArray.Length);
+
+                for (int i = 0; i < moveOverrideArray.Length; i++)
+                {
+                    //副本 未修改存储在实体中的数据
+                    MoveOverride moveOverride = moveOverrideArray[i];
+                    moveOverride.targetPosition = /*mouseWorldPosition*/movePositionArray[i];
+                    moveOverrideArray[i] = moveOverride;
+
+                    TargetOverride targetOverride = targetOverrideArray[i];
+                    targetOverride.targetEntity = Entity.Null;
+                    targetOverrideArray[i] = targetOverride;
+
+                    entityManager.SetComponentEnabled<MoveOverride>(entityArray[i], true);
+                }
+
+                entityQuery.CopyFromComponentDataArray(moveOverrideArray);
+                entityQuery.CopyFromComponentDataArray(targetOverrideArray);
+                #endregion
+            }
         }
     }
 
