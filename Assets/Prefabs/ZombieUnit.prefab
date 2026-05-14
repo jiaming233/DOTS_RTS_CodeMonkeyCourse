@@ -107,6 +107,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8502486967848988797, guid: 46ba6f7e484202a47a0d106f1441c16c, type: 3}
+      propertyPath: idleAnimationType
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8502486967848988797, guid: 46ba6f7e484202a47a0d106f1441c16c, type: 3}
+      propertyPath: walkAnimationType
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8502486967848988797, guid: 46ba6f7e484202a47a0d106f1441c16c, type: 3}
+      propertyPath: meleeAttackAnimationType
+      value: 7
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:

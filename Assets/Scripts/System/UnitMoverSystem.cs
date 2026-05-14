@@ -86,7 +86,7 @@ public partial struct UnitMoverJob : IJobEntity
     /// <param name="localTransform"></param>
     /// <param name="unitMover"></param>
     /// <param name="physicsVelocity"></param>
-    public void Execute(ref LocalTransform localTransform, in UnitMover unitMover, ref PhysicsVelocity physicsVelocity)
+    public void Execute(ref LocalTransform localTransform, ref UnitMover unitMover, ref PhysicsVelocity physicsVelocity)
     {
         float3 moveDirection = unitMover.targetPosition - localTransform.Position;
 
@@ -95,8 +95,11 @@ public partial struct UnitMoverJob : IJobEntity
             //reach target position
             physicsVelocity.Linear = float3.zero;
             physicsVelocity.Angular = float3.zero;
+            unitMover.IsMoving = false;
             return;
         }
+
+        unitMover.IsMoving = true;
 
         moveDirection = math.normalize(moveDirection);
 

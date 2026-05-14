@@ -255,6 +255,7 @@ GameObject:
   - component: {fileID: 4862234856393430242}
   - component: {fileID: 2226453956179119639}
   - component: {fileID: 4377287191934865843}
+  - component: {fileID: 8689984292469151388}
   m_Layer: 0
   m_Name: Mesh
   m_TagString: Untagged
@@ -327,6 +328,19 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &8689984292469151388
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3495764148672763237}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7f91794e5525c94ca8d596c88592581, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nextAnimationType: 0
 --- !u!1 &4410455066977737009
 GameObject:
   m_ObjectHideFlags: 0
@@ -395,6 +409,8 @@ GameObject:
   - component: {fileID: 3953725473506660683}
   - component: {fileID: 7913108754091339006}
   - component: {fileID: 4629974258985759019}
+  - component: {fileID: 5402648218933522348}
+  - component: {fileID: 8502486967848988797}
   m_Layer: 6
   m_Name: BaseUnit
   m_TagString: Untagged
@@ -586,3 +602,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74150fc732c5fb0429508038c1585b50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &5402648218933522348
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4564543809299527953}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4f9f0bdaa0094044b97e45b831479a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  meshGameObject: {fileID: 3495764148672763237}
+--- !u!114 &8502486967848988797
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4564543809299527953}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95ec09e9cb8946a459ad5a8d1ace24e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  idleAnimationType: 0
+  walkAnimationType: 0

@@ -30,4 +30,6 @@ public struct MeleeAttack : IComponentData
     public float timerMax;
     public int damageAmount;
     public float colliderSize;
+
+    public bool onAttacked;
 }
