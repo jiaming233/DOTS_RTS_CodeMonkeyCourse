@@ -62,6 +62,7 @@ partial struct MeleeAttackSystem : ISystem
                     {
                         if (hit.Entity == target.ValueRO.targetEntity)
                         {
+                            //UnityEngine.Debug.Log("HIT");
                             isTouchingTarget = true;
                             break;
                         }

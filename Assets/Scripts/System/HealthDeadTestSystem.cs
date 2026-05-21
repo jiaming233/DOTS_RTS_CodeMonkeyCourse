@@ -14,14 +14,15 @@ partial struct HealthDeadTestSystem : ISystem
             SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
 
         foreach((
-            RefRO<Health> health, 
+            RefRW<Health> health, 
             Entity entity)//WithEntityAccess 实体作为最后一个参数
             in SystemAPI.Query<
-                RefRO<Health>>().WithEntityAccess())
+                RefRW<Health>>().WithEntityAccess())
         {
             if(health.ValueRO.healthAmount <= 0)
             {
                 //entity is dead
+                health.ValueRW.onDead = true;
 
                 ////迭代时 不能销毁实体，是结构更改操作（DOTS整理内存）
                 //state.EntityManager.DestroyEntity(entity);

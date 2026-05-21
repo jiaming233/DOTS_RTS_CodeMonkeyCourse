@@ -1,5 +1,7 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
+using Unity.Physics;
 using Unity.Transforms;
 
 partial struct ZombieSpawnerSystem : ISystem
@@ -10,27 +12,67 @@ partial struct ZombieSpawnerSystem : ISystem
         state.RequireForUpdate<EntitiesReferences>();
     }
 
-    
+
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         EntitiesReferences entitiesReferences = SystemAPI.GetSingleton<EntitiesReferences>();
 
+        PhysicsWorldSingleton physicsWorldSingleton = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+        CollisionWorld collisionWorld = physicsWorldSingleton.CollisionWorld;
+        NativeList<DistanceHit> distanceHitList = new NativeList<DistanceHit>(Allocator.Temp);
+
         EntityCommandBuffer entityCommandBuffer = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
 
-        foreach((
+        foreach ((
             RefRO<LocalTransform> localTransform,
-            RefRW<ZombieSpawner> zombieSpawner) 
+            RefRW<ZombieSpawner> zombieSpawner)
             in SystemAPI.Query<
-                RefRO<LocalTransform>, 
+                RefRO<LocalTransform>,
                 RefRW<ZombieSpawner>>())
         {
             zombieSpawner.ValueRW.timer -= SystemAPI.Time.DeltaTime;
-            if(zombieSpawner.ValueRO.timer > 0f)
+            if (zombieSpawner.ValueRO.timer > 0f)
             {
                 continue;
             }
             zombieSpawner.ValueRW.timer = zombieSpawner.ValueRO.timerMax;
+
+            CollisionFilter collisionFilter = new CollisionFilter()
+            {
+                BelongsTo = ~0u,
+                CollidesWith = 1u << GameAssets.UNITS_LAYER,
+                GroupIndex = 0
+            };
+
+            distanceHitList.Clear();
+            int nearbyZombieAmount = 0;
+
+            if (collisionWorld.OverlapSphere(
+                localTransform.ValueRO.Position,
+                zombieSpawner.ValueRO.nearbyZombieAmountDistance,
+                ref distanceHitList,
+                collisionFilter))
+            {
+                foreach (DistanceHit distanceHit in distanceHitList)
+                {
+                    if (!SystemAPI.Exists(distanceHit.Entity))
+                    {
+                        continue;
+                    }
+
+                    if (SystemAPI.HasComponent<Unit>(distanceHit.Entity) 
+                        && SystemAPI.HasComponent<Zombie>(distanceHit.Entity))
+                    {
+                        nearbyZombieAmount++;
+                    }
+                }
+            }
+
+            if(nearbyZombieAmount >= zombieSpawner.ValueRO.nearbyZombieAmountMax)
+            {
+                continue;
+            }
 
             //Éú³É
             Entity zombieEntity = state.EntityManager.Instantiate(entitiesReferences.zombiePrefabEntity);

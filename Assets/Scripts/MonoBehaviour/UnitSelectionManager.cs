@@ -7,6 +7,7 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using Ray = UnityEngine.Ray;
 
 public class UnitSelectionManager : MonoBehaviour
@@ -15,6 +16,7 @@ public class UnitSelectionManager : MonoBehaviour
 
     public event EventHandler OnSelectionAreaStart;
     public event EventHandler OnSelectionAreaEnd;
+    public event EventHandler OnSelectedEntitiesChanged;
 
     //屏幕坐标
     private Vector2 selectionStartMousePosition;
@@ -27,6 +29,15 @@ public class UnitSelectionManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (EventSystem.current.IsPointerOverGameObject())
+            return;
+
+        //优先建造
+        if (!BuildingPlacementManager.Instance.GetActiveBuildingTypeSO().IsNone())
+        {
+            return;
+        }
+
         if (Input.GetMouseButtonDown(0))
         {
             selectionStartMousePosition = Input.mousePosition;
@@ -109,16 +120,17 @@ public class UnitSelectionManager : MonoBehaviour
                     Filter = new CollisionFilter()
                     {
                         BelongsTo = ~0u,
-                        CollidesWith = 1u << GameAssets.UNITS_LAYER,//Layer:Units 位掩码
+                        CollidesWith = 1u << GameAssets.UNITS_LAYER | 1u << GameAssets.BUILDINGS_LAYER,//Layer:Units 位掩码
                         GroupIndex = 0
                     }
                 };
 
                 if (collisionWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit raycastHit))
                 {
-                    if (entityManager.HasComponent<Unit>(raycastHit.Entity) && entityManager.HasComponent<Selected>(raycastHit.Entity))
+                    if (/*entityManager.HasComponent<Unit>(raycastHit.Entity) && */
+                        entityManager.HasComponent<Selected>(raycastHit.Entity))
                     {
-                        //hit a unit
+                        //hit a selectable entity
                         entityManager.SetComponentEnabled<Selected>(raycastHit.Entity, true);
 
                         Selected selected = entityManager.GetComponentData<Selected>(raycastHit.Entity);
@@ -130,6 +142,7 @@ public class UnitSelectionManager : MonoBehaviour
             #endregion
 
             OnSelectionAreaEnd?.Invoke(this, EventArgs.Empty);
+            OnSelectedEntitiesChanged?.Invoke(this, EventArgs.Empty);
         }
 
 
@@ -155,7 +168,7 @@ public class UnitSelectionManager : MonoBehaviour
                 Filter = new CollisionFilter()
                 {
                     BelongsTo = ~0u,
-                    CollidesWith = 1u << GameAssets.UNITS_LAYER,//Layer:Units 位掩码
+                    CollidesWith = 1u << GameAssets.UNITS_LAYER | 1u << GameAssets.BUILDINGS_LAYER,//Layer:Units 位掩码
                     GroupIndex = 0
                 }
             };
@@ -163,17 +176,17 @@ public class UnitSelectionManager : MonoBehaviour
             bool isAttackingSingleTarget = false;
             if (collisionWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit raycastHit))
             {
-                if (entityManager.HasComponent<Unit>(raycastHit.Entity))
+                if (entityManager.HasComponent<Faction>(raycastHit.Entity))
                 {
-                    Unit unit = entityManager.GetComponentData<Unit>(raycastHit.Entity);
+                    Faction faction = entityManager.GetComponentData<Faction>(raycastHit.Entity);
                     //右键点击僵尸
-                    if (unit.faction == Faction.Zombie)
+                    if (faction.factionType == FactionType.Zombie)
                     {
                         isAttackingSingleTarget = true;
 
                         //查找目标覆盖                      
                         entityQuery = new EntityQueryBuilder(Allocator.Temp)
-                            .WithAll<UnitMover, Selected>()
+                            .WithAll<Selected>()
                             .WithPresent<TargetOverride>()
                             .Build(entityManager);
 
@@ -240,6 +253,22 @@ public class UnitSelectionManager : MonoBehaviour
                 entityQuery.CopyFromComponentDataArray(targetOverrideArray);
                 #endregion
             }
+
+            //处理兵营集结位置
+            entityQuery = new EntityQueryBuilder(Allocator.Temp)
+                  .WithAll<Selected, BuildingBarracks, LocalTransform>()
+                  .Build(entityManager);
+
+            NativeArray<BuildingBarracks> buildingBarracksArray = entityQuery.ToComponentDataArray<BuildingBarracks>(Allocator.Temp);
+            NativeArray<LocalTransform> localTransformeArray = entityQuery.ToComponentDataArray<LocalTransform>(Allocator.Temp);
+
+            for (int i = 0; i < buildingBarracksArray.Length; i++)
+            {
+                BuildingBarracks buildingBarracks = buildingBarracksArray[i];
+                buildingBarracks.rallyPositionOffset = (float3)mouseWorldPosition - localTransformeArray[i].Position;
+                buildingBarracksArray[i] = buildingBarracks;
+            }
+            entityQuery.CopyFromComponentDataArray(buildingBarracksArray);
         }
     }
 

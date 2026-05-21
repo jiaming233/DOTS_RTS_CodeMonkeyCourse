@@ -62,11 +62,15 @@ public partial struct ChangeAnimationJob : IJobEntity
     public void Execute(ref ActiveAnimation activeAnimation, ref MaterialMeshInfo materialMeshInfo)
     {
         //确保射击\攻击动画播完
-        if (activeAnimation.activeAnimationType == AnimationDataSO.AnimationType.SoldierShoot)
-        {
-            return;
-        }
-        if (activeAnimation.activeAnimationType == AnimationDataSO.AnimationType.ZombieAttack)
+        //if (activeAnimation.activeAnimationType == AnimationDataSO.AnimationType.SoldierShoot)
+        //{
+        //    return;
+        //}
+        //if (activeAnimation.activeAnimationType == AnimationDataSO.AnimationType.ZombieAttack)
+        //{
+        //    return;
+        //}
+        if (AnimationDataSO.IsAnimationUninterruptable(activeAnimation.activeAnimationType))
         {
             return;
         }

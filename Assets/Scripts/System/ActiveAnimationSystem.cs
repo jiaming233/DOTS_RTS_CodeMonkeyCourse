@@ -118,14 +118,19 @@ public partial struct ActiveAnimationJob : IJobEntity
             materialMeshInfo.Mesh = activeAnimationData.intMeshIDBlobArray[activeAnimation.frame];
 
             //确保射击\攻击动画播完
-            if (activeAnimation.frame == 0
-                && activeAnimation.activeAnimationType == AnimationDataSO.AnimationType.SoldierShoot)
-            {
-                activeAnimation.activeAnimationType = AnimationDataSO.AnimationType.None;
-            }
+            //if (activeAnimation.frame == 0
+            //    && activeAnimation.activeAnimationType == AnimationDataSO.AnimationType.SoldierShoot)
+            //{
+            //    activeAnimation.activeAnimationType = AnimationDataSO.AnimationType.None;
+            //}
 
+            //if (activeAnimation.frame == 0
+            //   && activeAnimation.activeAnimationType == AnimationDataSO.AnimationType.ZombieAttack)
+            //{
+            //    activeAnimation.activeAnimationType = AnimationDataSO.AnimationType.None;
+            //}
             if (activeAnimation.frame == 0
-               && activeAnimation.activeAnimationType == AnimationDataSO.AnimationType.ZombieAttack)
+                && AnimationDataSO.IsAnimationUninterruptable(activeAnimation.activeAnimationType))
             {
                 activeAnimation.activeAnimationType = AnimationDataSO.AnimationType.None;
             }

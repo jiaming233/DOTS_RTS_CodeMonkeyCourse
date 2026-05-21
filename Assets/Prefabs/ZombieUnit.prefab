@@ -51,6 +51,14 @@ PrefabInstance:
       propertyPath: faction
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -5923458936666870898, guid: 46ba6f7e484202a47a0d106f1441c16c, type: 3}
+      propertyPath: factionType
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3450871309285538743, guid: 46ba6f7e484202a47a0d106f1441c16c, type: 3}
+      propertyPath: unitType
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 2226453956179119639, guid: 46ba6f7e484202a47a0d106f1441c16c, type: 3}
       propertyPath: m_Mesh
       value: 

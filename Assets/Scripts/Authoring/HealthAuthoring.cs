@@ -28,4 +28,5 @@ public struct Health : IComponentData
     public int healthAmount;
     public int healthAmountMax;
     public bool onHealthChange;
+    public bool onDead;
 }
