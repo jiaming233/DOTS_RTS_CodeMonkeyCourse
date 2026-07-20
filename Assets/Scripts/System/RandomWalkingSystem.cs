@@ -10,12 +10,16 @@ partial struct RandomWalkingSystem : ISystem
     {
         foreach ((
             RefRW<RandomWalking> randomWalking,
-            RefRW<UnitMover> unitMover,
+            //RefRW<UnitMover> unitMover,
+            RefRW<TargetPositionPathQueued> targetPositionPathQueue,
+            EnabledRefRW<TargetPositionPathQueued> targetPositionPathQueueEnabled,
             RefRO<LocalTransform> localTransform)
             in SystemAPI.Query<
                 RefRW<RandomWalking>,
-                RefRW<UnitMover>,
-                RefRO<LocalTransform>>())
+                //RefRW<UnitMover>,
+                RefRW<TargetPositionPathQueued>,
+                EnabledRefRW<TargetPositionPathQueued>,
+                RefRO <LocalTransform>>().WithPresent<TargetPositionPathQueued>())
         {
             float distance = math.distancesq(localTransform.ValueRO.Position, randomWalking.ValueRO.targetPosition);
 
@@ -37,7 +41,9 @@ partial struct RandomWalkingSystem : ISystem
             else
             {
                 //too far, move closer
-                unitMover.ValueRW.targetPosition = randomWalking.ValueRO.targetPosition;
+                //unitMover.ValueRW.targetPosition = randomWalking.ValueRO.targetPosition;
+                targetPositionPathQueue.ValueRW.targetPosition = randomWalking.ValueRW.targetPosition;
+                targetPositionPathQueueEnabled.ValueRW = true;
             }
         }
     }

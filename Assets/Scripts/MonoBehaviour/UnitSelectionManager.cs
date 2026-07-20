@@ -207,12 +207,12 @@ public class UnitSelectionManager : MonoBehaviour
             }
             #endregion
 
+            //移动到某处
             if (!isAttackingSingleTarget)
             {
                 entityQuery = new EntityQueryBuilder(Allocator.Temp)
-                    .WithAll<UnitMover, Selected>()
-                    .WithPresent<MoveOverride>()
-                    .WithPresent<TargetOverride>()
+                    .WithAll</*UnitMover, */Selected>()
+                    .WithPresent<MoveOverride, TargetOverride, TargetPositionPathQueued, FlowFieldPathRequest, FlowFieldFollower>()
                     .Build(entityManager);
 
                 NativeArray<Entity> entityArray = entityQuery.ToEntityArray(Allocator.Temp);
@@ -221,6 +221,9 @@ public class UnitSelectionManager : MonoBehaviour
                 NativeArray<MoveOverride> moveOverrideArray = entityQuery.ToComponentDataArray<MoveOverride>(Allocator.Temp);
                 //目标覆盖
                 NativeArray<TargetOverride> targetOverrideArray = entityQuery.ToComponentDataArray<TargetOverride>(Allocator.Temp);
+
+                //NativeArray<FlowFieldPathRequest> flowFieldPathRequesteArray = entityQuery.ToComponentDataArray<FlowFieldPathRequest>(Allocator.Temp);
+                NativeArray<TargetPositionPathQueued> targetPositionPathQueueArray = entityQuery.ToComponentDataArray<TargetPositionPathQueued>(Allocator.Temp);
                 #region 单个更新
                 //for (int i = 0; i < unitMoverArray.Length; i++)
                 //{
@@ -241,16 +244,30 @@ public class UnitSelectionManager : MonoBehaviour
                     MoveOverride moveOverride = moveOverrideArray[i];
                     moveOverride.targetPosition = /*mouseWorldPosition*/movePositionArray[i];
                     moveOverrideArray[i] = moveOverride;
+                    entityManager.SetComponentEnabled<MoveOverride>(entityArray[i], true);
 
                     TargetOverride targetOverride = targetOverrideArray[i];
                     targetOverride.targetEntity = Entity.Null;
                     targetOverrideArray[i] = targetOverride;
 
-                    entityManager.SetComponentEnabled<MoveOverride>(entityArray[i], true);
+                    //FlowFieldPathRequest flowFieldPathRequest = flowFieldPathRequesteArray[i];
+                    //flowFieldPathRequest.targetPosition = movePositionArray[i];
+                    //flowFieldPathRequesteArray[i] = flowFieldPathRequest;
+                    //entityManager.SetComponentEnabled<FlowFieldPathRequest>(entityArray[i], true);
+
+                    TargetPositionPathQueued targetPositionPathQueue = targetPositionPathQueueArray[i];
+                    targetPositionPathQueue.targetPosition = movePositionArray[i];
+                    targetPositionPathQueueArray[i] = targetPositionPathQueue;
+                    entityManager.SetComponentEnabled<TargetPositionPathQueued>(entityArray[i], true);
+
+                    entityManager.SetComponentEnabled<FlowFieldPathRequest>(entityArray[i], false);
+                    entityManager.SetComponentEnabled<FlowFieldFollower>(entityArray[i], false);
                 }
 
                 entityQuery.CopyFromComponentDataArray(moveOverrideArray);
                 entityQuery.CopyFromComponentDataArray(targetOverrideArray);
+                //entityQuery.CopyFromComponentDataArray(flowFieldPathRequesteArray);
+                entityQuery.CopyFromComponentDataArray(targetPositionPathQueueArray);
                 #endregion
             }
 

@@ -23,13 +23,17 @@ partial struct ShootAttackSystem : ISystem
            RefRW<LocalTransform> localTransform,
            RefRW<ShootAttack> shootAttack,
            RefRO<Target> target,
-           RefRW<UnitMover> unitMover,
+           RefRO<UnitMover> unitMover,
+           RefRW<TargetPositionPathQueued> targetPositionPathQueue,
+           EnabledRefRW < TargetPositionPathQueued > targetPositionPathQueueEnabled,
            Entity entity)
            in SystemAPI.Query<
                RefRW<LocalTransform>,
                RefRW<ShootAttack>,
                RefRO<Target>,
-               RefRW<UnitMover>>().WithDisabled<MoveOverride>().WithEntityAccess())//仅在移动覆盖组件禁用时 执行此逻辑
+               RefRO<UnitMover>,
+               RefRW<TargetPositionPathQueued>,
+               EnabledRefRW<TargetPositionPathQueued>>().WithDisabled<MoveOverride>().WithPresent<TargetPositionPathQueued>().WithEntityAccess())//仅在移动覆盖组件禁用时 执行此逻辑
         {
             if(target.ValueRO.targetEntity == Entity.Null)
             {
@@ -43,13 +47,17 @@ partial struct ShootAttackSystem : ISystem
             if (distance > shootAttack.ValueRO.attackDistance)
             {
                 //too far to attack, move closer
-                unitMover.ValueRW.targetPosition = targetLocalTransform.ValueRO.Position;
+                //unitMover.ValueRW.targetPosition = targetLocalTransform.ValueRO.Position;
+                targetPositionPathQueue.ValueRW.targetPosition = targetLocalTransform.ValueRO.Position;
+                targetPositionPathQueueEnabled.ValueRW = true;
                 continue;
             }
             else
             {
                 //stop moving then attack
-                unitMover.ValueRW.targetPosition = localTransform.ValueRO.Position;
+                //unitMover.ValueRW.targetPosition = localTransform.ValueRO.Position;
+                targetPositionPathQueue.ValueRW.targetPosition = localTransform.ValueRO.Position;
+                targetPositionPathQueueEnabled.ValueRW = true;
             }
 
             float3 aimDirection = targetLocalTransform.ValueRO.Position - localTransform.ValueRO.Position;

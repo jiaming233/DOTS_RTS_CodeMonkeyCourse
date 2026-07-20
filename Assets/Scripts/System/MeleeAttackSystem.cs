@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
+using UnityEngine.UIElements;
 
 partial struct MeleeAttackSystem : ISystem
 {
@@ -19,13 +20,17 @@ partial struct MeleeAttackSystem : ISystem
            RefRW<LocalTransform> localTransform,
            RefRW<MeleeAttack> meleeAttack,
            RefRO<Target> target,
-           RefRW<UnitMover> unitMover)
+           RefRO<UnitMover> unitMover,
+           RefRW<TargetPositionPathQueued> targetPositionPathQueue,
+           EnabledRefRW<TargetPositionPathQueued> targetPositionPathQueueEnabled)
            in SystemAPI.Query<
                RefRW<LocalTransform>,
                RefRW<MeleeAttack>,
                RefRO<Target>,
-               RefRW<UnitMover>>().WithDisabled<MoveOverride>())//仅在移动覆盖组件禁用时 执行此逻辑)
-        {
+               RefRO<UnitMover>,
+               RefRW<TargetPositionPathQueued>,
+               EnabledRefRW<TargetPositionPathQueued>>().WithDisabled<MoveOverride>().WithPresent<TargetPositionPathQueued>())//仅在移动覆盖组件禁用时 执行此逻辑)
+          {
             if (target.ValueRO.targetEntity == Entity.Null)
             {
                 continue;
@@ -73,12 +78,16 @@ partial struct MeleeAttackSystem : ISystem
             if (!isCloseEnoughToAttack && !isTouchingTarget)
             {
                 //too far to attack, move closer
-                unitMover.ValueRW.targetPosition = targetLocalTransform.Position;
+                //unitMover.ValueRW.targetPosition = targetLocalTransform.Position;
+                targetPositionPathQueue.ValueRW.targetPosition = targetLocalTransform.Position;
+                targetPositionPathQueueEnabled.ValueRW = true;
             }
             else
             {
                 //stop moving then attack
-                unitMover.ValueRW.targetPosition = localTransform.ValueRO.Position;
+                //unitMover.ValueRW.targetPosition = localTransform.ValueRO.Position;
+                targetPositionPathQueue.ValueRW.targetPosition = localTransform.ValueRO.Position;
+                targetPositionPathQueueEnabled.ValueRW = true;
 
                 float3 aimDirection = targetLocalTransform.Position - localTransform.ValueRO.Position;
                 aimDirection = math.normalize(aimDirection);
@@ -103,7 +112,7 @@ partial struct MeleeAttackSystem : ISystem
                 targetHealth.ValueRW.onHealthChange = true;
 
                 meleeAttack.ValueRW.onAttacked = true;
-            }      
+            }
         }
     }
 }
